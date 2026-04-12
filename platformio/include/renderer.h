@@ -25,29 +25,29 @@
 #include "config.h"
 
 #ifdef DISP_BW_V2
-  #define DISP_WIDTH  800
-  #define DISP_HEIGHT 480
+  #define DISP_WIDTH  800 - X_MIN_OFFSET - X_MAX_OFFSET
+  #define DISP_HEIGHT 480 - Y_MIN_OFFSET - Y_MAX_OFFSET
   #include <GxEPD2_BW.h>
   extern GxEPD2_BW<GxEPD2_750_GDEY075T7,
                    GxEPD2_750_GDEY075T7::HEIGHT> display;
 #endif
 #ifdef DISP_3C_B
-  #define DISP_WIDTH  800
-  #define DISP_HEIGHT 480
+  #define DISP_WIDTH  800 - X_MIN_OFFSET - X_MAX_OFFSET
+  #define DISP_HEIGHT 480 - Y_MIN_OFFSET - Y_MAX_OFFSET
   #include <GxEPD2_3C.h>
   extern GxEPD2_3C<GxEPD2_750c_GDEY075Z08,
                    GxEPD2_750c_GDEY075Z08::HEIGHT / 2> display;
 #endif
 #ifdef DISP_7C_F
-  #define DISP_WIDTH  800
-  #define DISP_HEIGHT 480
+  #define DISP_WIDTH  800 - X_MIN_OFFSET - X_MAX_OFFSET
+  #define DISP_HEIGHT 480 - Y_MIN_OFFSET - Y_MAX_OFFSET
   #include <GxEPD2_7C.h>
   extern GxEPD2_7C<GxEPD2_730c_GDEY073D46, 
                    GxEPD2_730c_GDEY073D46::HEIGHT / 4> display;
 #endif
 #ifdef DISP_BW_V1
-  #define DISP_WIDTH  640
-  #define DISP_HEIGHT 384
+  #define DISP_WIDTH  640 - X_MIN_OFFSET - X_MAX_OFFSET
+  #define DISP_HEIGHT 384 - Y_MIN_OFFSET - Y_MAX_OFFSET
   #include <GxEPD2_BW.h>
   extern GxEPD2_BW<GxEPD2_750,
                    GxEPD2_750::HEIGHT> display;
