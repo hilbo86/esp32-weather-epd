@@ -1693,7 +1693,7 @@ uint16_t getCurrentConditionsColor(const owm_weather_t &wtr)
   return GxEPD_RED;
 }
 
-void getGraphColors(uint16_t *colbuffer, float t_now, float t_soon) {
+void setGraphColors(uint16_t *colbuffer, float t_now, float t_soon) {
   uint16_t col_warm, col_cold, col_rise, col_fall;
   bool rising = t_soon > t_now;
   if (t_now < T_FREEZING) {
