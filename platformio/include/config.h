@@ -35,6 +35,8 @@
 
 #define X_MIN_OFFSET 40
 #define Y_MIN_OFFSET 5
+#define X_MAX_OFFSET 48
+#define Y_MAX_OFFSET 3
 
 // E-PAPER DRIVER BOARD
 // The DESPI-C02 is the only officially supported driver board.
