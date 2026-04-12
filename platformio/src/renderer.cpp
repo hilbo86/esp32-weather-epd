@@ -928,7 +928,7 @@ void drawCurrentConditions(const owm_current_t &current,
   // current weather icon
   display.drawInvertedBitmap(0, 0,
                              getCurrentConditionsBitmap196(current, today),
-                             196, 196, GxEPD_BLACK);
+                             196, 196, getCurrentConditionsColor(current.weather));
 
   // current temp
 #ifdef UNITS_TEMP_KELVIN
@@ -1540,9 +1540,22 @@ void drawOutlookGraph(const owm_hourly_t *hourly, const owm_daily_t *daily,
       y0_t = y_t[i - 1];
       y1_t = y_t[i    ];
       // graph temperature
-      display.drawLine(x0_t    , y0_t    , x1_t    , y1_t    , ACCENT_COLOR);
-      display.drawLine(x0_t    , y0_t + 1, x1_t    , y1_t + 1, ACCENT_COLOR);
-      display.drawLine(x0_t - 1, y0_t    , x1_t - 1, y1_t    , ACCENT_COLOR);
+      static uint16_t graphColors[] = {GxEPD_BLACK, GxEPD_BLACK, GxEPD_BLACK};
+      getGraphColors(graphColors, kelvin_to_celsius(hourly[i-1].temp), kelvin_to_celsius(hourly[i].temp));
+      /* Color concept:
+       * First line:
+       *   Nennwerte -> dominiert starke Veraenderungen. Bei leichten Veraenderungen rezessiv
+       *   Farbe anhand der Veraenderung zum naechsten Schritt (am schwierigsten)
+       * Second line:
+       *   1 PX unten -> 50% bei konstant - langsamer Veraenderung. Bei starkem Abfall rezessiv -> "warm"
+       *   Farbe anhand der Ist-Temperatur
+       * Third line:
+       *   1 PX links -> 50% bei konstant - langsamer Veraenderung . Bei starkem Anstieg rezessiv -> "kalt"
+       *   Farbe anhand der Ist-Temperatur
+      */
+      display.drawLine(x0_t    , y0_t    , x1_t    , y1_t    , graphColors[0]);
+      display.drawLine(x0_t    , y0_t + 1, x1_t    , y1_t + 1, graphColors[1]);
+      display.drawLine(x0_t - 1, y0_t    , x1_t - 1, y1_t    , graphColors[2]);
 
       // draw hourly bitmap
 #if DISPLAY_HOURLY_ICONS
@@ -1578,7 +1591,7 @@ void drawOutlookGraph(const owm_hourly_t *hourly, const owm_daily_t *daily,
         const uint8_t *bitmap = getHourlyForecastBitmap32(hourly[i],
                                                           daily[day_idx]);
         display.drawInvertedBitmap(xTick - 16, y_b - 32,
-                                   bitmap, 32, 32, GxEPD_BLACK);
+                                   bitmap, 32, 32, getCurrentConditionsColor(hourly[i].weather));
       }
 #endif
     }
