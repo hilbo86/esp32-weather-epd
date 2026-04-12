@@ -1651,3 +1651,119 @@ const uint8_t *getMoonPhaseBitmap48(const owm_daily_t &daily)
   default:  return "";
   }
 } // end getMoonPhaseStr
+
+uint16_t getCurrentConditionsColor(const owm_weather_t &wtr)
+{
+  int id = wtr.id;
+  switch(id) {
+    case 210:
+    case 211:
+    case 212:
+    case 221:
+      return GxEPD_YELLOW;
+    case 615:
+    case 616:
+      return GxEPD_BLUE;
+    case 701: 
+      return GxEPD_GREEN;
+    case 711:
+      return GxEPD_RED;
+    case 721:
+      return GxEPD_BLACK;
+    case 731:
+      return GxEPD_ORANGE;
+    case 741:
+      return GxEPD_BLACK;
+    case 751:
+    case 761:
+    case 762:
+      return GxEPD_ORANGE;
+    case 771:
+    case 781:
+      return GxEPD_BLACK;
+    case 800:
+      return GxEPD_GREEN;
+    default:
+      if (id >= 200 && id < 300) return GxEPD_YELLOW;
+      if (id >= 300 && id < 600) return GxEPD_BLUE;
+      if (id >= 600 && id < 700) return GxEPD_BLACK;
+      if (id >= 700 && id < 800) return GxEPD_ORANGE;
+      if (id >= 800 && id < 900) return GxEPD_GREEN;
+  }
+  return GxEPD_RED;
+}
+
+void getGraphColors(uint16_t *colbuffer, float t_now, float t_soon) {
+  uint16_t col_warm, col_cold, col_rise, col_fall;
+  bool rising = t_soon > t_now;
+  if (t_now < T_FREEZING) {
+    col_cold = GxEPD_BLACK;
+    col_warm = GxEPD_BLACK;
+    col_rise = GxEPD_BLUE;
+    col_fall = GxEPD_BLACK;
+  } 
+  else if (t_now < T_VERY_COLD) {
+    col_cold = GxEPD_BLACK;
+    col_warm = GxEPD_BLUE;
+    col_rise = GxEPD_BLUE;
+    col_fall = GxEPD_BLACK;
+  }
+  else if (t_now < T_COLD) {
+    col_cold = GxEPD_BLUE;
+    col_warm = GxEPD_BLUE;
+    col_rise = GxEPD_GREEN;
+    col_fall = GxEPD_BLACK;
+  }
+  else if (t_now < T_CHILL) {
+    col_cold = GxEPD_BLUE;
+    col_warm = GxEPD_GREEN;
+    col_rise = GxEPD_GREEN;
+    col_fall = GxEPD_BLUE;
+  }
+  else if (t_now < T_PLEASANT) {
+    col_cold = GxEPD_GREEN;
+    col_warm = GxEPD_GREEN;
+    col_rise = GxEPD_ORANGE;
+    col_fall = GxEPD_BLUE;
+  }
+  else if (t_now < T_WARM) {
+    col_cold = GxEPD_GREEN;
+    col_warm = GxEPD_ORANGE;
+    col_rise = GxEPD_ORANGE;
+    col_fall = GxEPD_GREEN;
+  }
+  else if (t_now < T_VERY_WARM) {
+    col_cold = GxEPD_ORANGE;
+    col_warm = GxEPD_ORANGE;
+    col_rise = GxEPD_RED;
+    col_fall = GxEPD_GREEN;
+  }
+  else if (t_now < T_HOT) {
+    col_cold = GxEPD_ORANGE;
+    col_warm = GxEPD_RED;
+    col_rise = GxEPD_RED;
+    col_fall = GxEPD_ORANGE;
+  }
+  else if (t_now < T_VERY_HOT) {
+    col_cold = GxEPD_RED;
+    col_warm = GxEPD_RED;
+    col_rise = GxEPD_YELLOW;
+    col_fall = GxEPD_ORANGE;
+  }
+  else if (t_now < T_EXTREMELY_HOT) {
+    col_cold = GxEPD_RED;
+    col_warm = GxEPD_YELLOW;
+    col_rise = GxEPD_YELLOW;
+    col_fall = GxEPD_RED;
+  }
+  else {
+    col_cold = GxEPD_YELLOW;
+    col_warm = GxEPD_YELLOW;
+    col_rise = GxEPD_YELLOW;
+    col_fall = GxEPD_RED;
+  }
+  colbuffer[0] = rising ? col_rise : col_fall;
+  colbuffer[1] = col_warm;
+  colbuffer[2] = col_cold;
+}
+
