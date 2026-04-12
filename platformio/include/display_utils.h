@@ -81,5 +81,8 @@ void disableBuiltinLED();
 const uint8_t *getMoonPhaseBitmap48(const owm_daily_t &daily);
 const char *getMoonPhaseStr(const owm_daily_t &daily);
 
+uint16_t getCurrentConditionsColor(const owm_weather_t &wtr);
+void getGraphColors(uint16_t *colbuffer, float t_now, float t_soon);
+
 #endif
 
