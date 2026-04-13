@@ -225,7 +225,7 @@ void drawMultiLnString(int16_t x, int16_t y, const String &text,
 void initDisplay()
 {
   pinMode(PIN_EPD_PWR, OUTPUT);
-  digitalWrite(PIN_EPD_PWR, HIGH);
+  digitalWrite(PIN_EPD_PWR, DISP_ON);
 #ifdef DRIVER_WAVESHARE
   display.init(115200, true, 2, false);
 #endif
@@ -239,7 +239,7 @@ void initDisplay()
             PIN_EPD_MOSI,
             PIN_EPD_CS);
 
-  display.setRotation(0);
+  display.setRotation(DISP_ROTATION);
   display.setTextSize(1);
   display.setTextColor(GxEPD_BLACK);
   display.setTextWrap(false);
@@ -255,7 +255,7 @@ void powerOffDisplay()
 {
   display.hibernate(); // turns powerOff() and sets controller to deep sleep for
                        // minimum power use
-  digitalWrite(PIN_EPD_PWR, LOW);
+  digitalWrite(PIN_EPD_PWR, DISP_OFF);
   return;
 } // end initDisplay
 
