@@ -22,6 +22,27 @@
 #include <time.h>
 #include "api_response.h"
 
+// Color definitions from GxEPD2.h - maybe find a better / more versatile solution
+#define GxEPD_BLACK     0x0000
+#define GxEPD_WHITE     0xFFFF
+#define GxEPD_RED       0xF800 // 255,   0,   0
+#define GxEPD_YELLOW    0xFFE0 // 255, 255,   0 !!no longer same as GxEPD_RED!!
+#define GxEPD_BLUE      0x001F //   0,   0, 255
+#define GxEPD_GREEN     0x07E0 //   0, 255,   0
+#define GxEPD_ORANGE    0xFC00 // 255, 128,   0
+
+// Temp threshold definitions for graph color (in deg C)
+#define T_FREEZING 0
+#define T_VERY_COLD 6
+#define T_COLD 12
+#define T_CHILL 16
+#define T_PLEASANT 20
+#define T_WARM 24
+#define T_VERY_WARM 28
+#define T_HOT 32
+#define T_VERY_HOT 36
+#define T_EXTREMELY_HOT 40
+
 enum alert_category {
   NOT_FOUND = -1,
   SMOG,
@@ -80,6 +101,9 @@ void printHeapUsage();
 void disableBuiltinLED();
 const uint8_t *getMoonPhaseBitmap48(const owm_daily_t &daily);
 const char *getMoonPhaseStr(const owm_daily_t &daily);
+
+uint16_t getCurrentConditionsColor(const owm_weather_t &wtr);
+void setGraphColors(uint16_t *colbuffer, float t_now, float t_soon);
 
 #endif
 
