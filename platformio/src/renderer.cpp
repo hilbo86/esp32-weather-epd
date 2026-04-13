@@ -1541,7 +1541,7 @@ void drawOutlookGraph(const owm_hourly_t *hourly, const owm_daily_t *daily,
       y1_t = y_t[i    ];
       // graph temperature
       static uint16_t graphColors[] = {GxEPD_BLACK, GxEPD_BLACK, GxEPD_BLACK};
-      getGraphColors(graphColors, kelvin_to_celsius(hourly[i-1].temp), kelvin_to_celsius(hourly[i].temp));
+      setGraphColors(graphColors, kelvin_to_celsius(hourly[i-1].temp), kelvin_to_celsius(hourly[i].temp));
       /* Color concept:
        * First line:
        *   Nennwerte -> dominiert starke Veraenderungen. Bei leichten Veraenderungen rezessiv
