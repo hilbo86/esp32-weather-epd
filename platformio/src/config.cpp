@@ -37,6 +37,9 @@ const uint8_t PIN_EPD_SCK  = 18;
 const uint8_t PIN_EPD_MISO = 19; // 19 Master-In Slave-Out not used, as no data from display
 const uint8_t PIN_EPD_MOSI = 23;
 const uint8_t PIN_EPD_PWR  = 26; // Irrelevant if directly connected to 3.3V
+const bool    DISP_ON      = LOW; // LOW = Disp on at low level
+const bool    DISP_OFF     = HIGH;
+const uint8_t DISP_ROTATION = 2; // 0 = Standard, 2 = Upside down
 // I2C Pins used for BME280
 const uint8_t PIN_BME_SDA = 17;
 const uint8_t PIN_BME_SCL = 16;
