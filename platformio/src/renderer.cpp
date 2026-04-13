@@ -239,7 +239,7 @@ void initDisplay()
             PIN_EPD_MOSI,
             PIN_EPD_CS);
 
-  display.setRotation(0);
+  display.setRotation(DISP_ROTATION);
   display.setTextSize(1);
   display.setTextColor(GxEPD_BLACK);
   display.setTextWrap(false);
