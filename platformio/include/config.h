@@ -44,8 +44,8 @@
 // The Waveshare rev2.2 is no longer in production.
 // Users of the Waveshare rev2.3 have reported experiencing low contrast issues.
 // Uncomment the macro that identifies your driver board hardware.
-#define DRIVER_DESPI_C02
-// #define DRIVER_WAVESHARE
+// #define DRIVER_DESPI_C02
+#define DRIVER_WAVESHARE
 
 // INDOOR ENVIRONMENT SENSOR
 // Uncomment the macro that identifies your sensor.
@@ -54,7 +54,7 @@
 
 // If you encounter issues with the BME280 sensor showing no data, uncomment and
 // add a small delay before reading it's value. 300ms seems to work for most people
-// #define SENSOR_INIT_DELAY_MS 300
+ #define SENSOR_INIT_DELAY_MS 300
 
 // 3 COLOR E-INK ACCENT COLOR
 // Defines the 3rd color to be used when a 3+ color display is selected.
@@ -69,7 +69,7 @@
 
 // LOCALE
 // If your locale is not here, you can add it by copying and modifying one of
-// the files in src/locales. Please feel free to create a pull request to add
+// the files in include/locales. Please feel free to create a pull request to add
 // official support for your locale.
 //   Language (Territory)            code
 //   German (Germany)                de_DE

@@ -37,16 +37,16 @@ const uint8_t PIN_EPD_SCK  = 18;
 const uint8_t PIN_EPD_MISO = 19; // 19 Master-In Slave-Out not used, as no data from display
 const uint8_t PIN_EPD_MOSI = 23;
 const uint8_t PIN_EPD_PWR  = 26; // Irrelevant if directly connected to 3.3V
-const bool    DISP_ON      = LOW; // LOW = Disp on at low level
+const bool    DISP_ON      = LOW;
 const bool    DISP_OFF     = HIGH;
-const uint8_t DISP_ROTATION = 2; // 0 = Standard, 2 = Upside down
+const uint8_t DISP_ROTATION = 2;
 // I2C Pins used for BME280
 const uint8_t PIN_BME_SDA = 17;
 const uint8_t PIN_BME_SCL = 16;
 const uint8_t PIN_BME_PWR =  4;   // Irrelevant if directly connected to 3.3V
 const uint8_t BME_ADDRESS = 0x76; // 0x76 if SDO -> GND; 0x77 if SDO -> VCC
 
-// WIFI
+// WIFI - Credentials ONLY DUMMY!
 // const char *WIFI_SSID     = "ssid";
 // const char *WIFI_PASSWORD = "password";
 const unsigned long WIFI_TIMEOUT = 10000; // ms, WiFi connection timeout.
@@ -59,9 +59,9 @@ const unsigned long WIFI_TIMEOUT = 10000; // ms, WiFi connection timeout.
 //   -258 Deserialization Incomplete Input
 const unsigned HTTP_CLIENT_TCP_TIMEOUT = 10000; // ms
 
-// OPENWEATHERMAP API
+// OPENWEATHERMAP API - API Key ONLY DUMMY
 // OpenWeatherMap API key, https://openweathermap.org/
-// const String OWM_APIKEY   = "abcdefghijklmnopqrstuvwxyz012345";
+// const String OWM_APIKEY   = "0123456789abcdef0123456789abcdef";
 const String OWM_ENDPOINT = "api.openweathermap.org";
 // OpenWeatherMap One Call 2.5 API is deprecated for all new free users
 // (accounts created after Summer 2022).
@@ -79,12 +79,12 @@ const String OWM_ENDPOINT = "api.openweathermap.org";
 //   calls.
 const String OWM_ONECALL_VERSION = "3.0";
 
-// LOCATION -> Moved to credentials.cpp
+//// LOCATION -> Moved to credentials.cpp
 
 // TIME
 // For list of time zones see
 // https://github.com/nayarsystems/posix_tz_db/blob/master/zones.csv
-const char *TIMEZONE = "EST5EDT,M3.2.0,M11.1.0";
+const char *TIMEZONE = "CET-1CEST,M3.5.0,M10.5.0/3";
 // Time format used when displaying sunrise/set times. (Max 11 characters)
 // For more information about formatting see
 // https://man7.org/linux/man-pages/man3/strftime.3.html
