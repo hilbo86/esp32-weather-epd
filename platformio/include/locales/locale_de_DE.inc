@@ -187,12 +187,9 @@ const char *TXT_CRIT_LOW_BATTERY_VOLTAGE = "Critically low battery voltage!";
 // high where the first index of the vector is the least urgent keyword and the
 // last index is the most urgent keyword. Expected as all lowercase.
 //
-// Note to Translators:
-//   OpenWeatherMap returns alerts in English regardless of the OWM LANGUAGE
-//   option or territory. For this reason it is preferred that you do not
-//   translate text related to Alerts. Understandably, it may be undesirable to
-//   see English alerts in territories where English is uncommon. To satisfy
-//   this, users should set the DISPLAY_ALERTS macro to 0 in config.h.
+// OpenWeatherMap returns alert event names in English even with OWM_LANG="de".
+// Keep English keywords here for filtering and icon selection; translate only
+// the event title shown on the display, after those steps.
 //
 // Here are a few examples, uncomment the array for your region (or create your
 // own).
@@ -200,6 +197,68 @@ const char *TXT_CRIT_LOW_BATTERY_VOLTAGE = "Critically low battery voltage!";
 // const std::vector<String> ALERT_URGENCY = {"yellow", "amber", "red"};                 // United Kingdom's national weather service (MET Office)
 const std::vector<String> ALERT_URGENCY = {"minor", "moderate", "severe", "extreme"}; // METEO
 // const std::vector<String> ALERT_URGENCY = {}; // Disable urgency interpretation (algorithm will fallback to only prefer the most recently issued alerts)
+
+#define HAS_LOCALIZED_ALERT_EVENTS
+String localizeAlertEvent(const String &event)
+{
+  String name = event;
+  name.trim();
+  name.toLowerCase();
+
+  const char *severity = "";
+  if (name.startsWith("minor "))
+  {
+    severity = " (gering)";
+    name.remove(0, 6);
+  }
+  else if (name.startsWith("moderate "))
+  {
+    severity = " (m\344\337ig)";
+    name.remove(0, 9);
+  }
+  else if (name.startsWith("severe "))
+  {
+    severity = " (schwer)";
+    name.remove(0, 7);
+  }
+  else if (name.startsWith("extreme "))
+  {
+    severity = " (extrem)";
+    name.remove(0, 8);
+  }
+
+  static const struct {
+    const char *english;
+    const char *german;
+  } translations[] = {
+    {"thunderstorm warning", "Gewitterwarnung"},
+    {"heavy rain warning", "Starkregenwarnung"},
+    {"rain warning", "Regenwarnung"},
+    {"flood warning", "Hochwasserwarnung"},
+    {"wind warning", "Windwarnung"},
+    {"storm warning", "Sturmwarnung"},
+    {"snow warning", "Schneewarnung"},
+    {"ice warning", "Gl\344ttewarnung"},
+    {"frost warning", "Frostwarnung"},
+    {"fog warning", "Nebelwarnung"},
+    {"heat warning", "Hitzewarnung"},
+    {"cold warning", "K\344ltewarnung"},
+    {"hail warning", "Hagelwarnung"},
+    {"fire warning", "Brandgefahr"},
+    {"avalanche warning", "Lawinenwarnung"},
+    {"tornado warning", "Tornadowarnung"},
+    {"hurricane warning", "Hurrikanwarnung"},
+  };
+
+  for (const auto &translation : translations)
+  {
+    if (name == translation.english)
+    {
+      return String(translation.german) + severity;
+    }
+  }
+  return event; // Keep provider-specific titles intact if no translation fits.
+}
 
 // ALERT TERMINOLOGY
 // Weather terminology associated with each alert icon

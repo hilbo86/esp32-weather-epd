@@ -142,6 +142,7 @@ extern const char *TXT_CRIT_LOW_BATTERY_VOLTAGE;
 
 // ALERTS
 extern const std::vector<String> ALERT_URGENCY;
+String localizeAlertEvent(const String &event);
 // ALERT TERMINOLOGY
 extern const std::vector<String> TERM_SMOG;
 extern const std::vector<String> TERM_SMOKE;

@@ -1210,25 +1210,26 @@ void drawForecast(const owm_daily_t *daily, tm timeInfo)
     owm_alerts_t &cur_alert = alerts[alert_indices[0]];
     display.drawInvertedBitmap(196 + X_MIN_OFFSET, 8 + Y_MIN_OFFSET, getAlertBitmap48(cur_alert), 48, 48,
                                ACCENT_COLOR);
-    // must be called after getAlertBitmap
-    toTitleCase(cur_alert.event);
+    // Keep the English event name for icon selection, then localize the title.
+    String eventName = localizeAlertEvent(cur_alert.event);
+    if (eventName == cur_alert.event) toTitleCase(eventName);
 
     display.setFont(&FONT_14pt8b);
-    if (getStringWidth(cur_alert.event) <= max_w)
+    if (getStringWidth(eventName) <= max_w)
     { // Fits on a single line, draw along bottom
-      drawString(196 + 48 + 4, 24 + 8 - 12 + 20 + 1, cur_alert.event, LEFT);
+      drawString(196 + 48 + 4, 24 + 8 - 12 + 20 + 1, eventName, LEFT);
     }
     else
     { // use smaller font
       display.setFont(&FONT_12pt8b);
-      if (getStringWidth(cur_alert.event) <= max_w)
+      if (getStringWidth(eventName) <= max_w)
       { // Fits on a single line with smaller font, draw along bottom
-        drawString(196 + 48 + 4, 24 + 8 - 12 + 17 + 1, cur_alert.event, LEFT);
+        drawString(196 + 48 + 4, 24 + 8 - 12 + 17 + 1, eventName, LEFT);
       }
       else
       { // Does not fit on a single line, draw higher to allow room for 2nd line
         drawMultiLnString(196 + 48 + 4, 24 + 8 - 12 + 17 - 11,
-                          cur_alert.event, LEFT, max_w, 2, 23);
+                          eventName, LEFT, max_w, 2, 23);
       }
     }
   } // end 1 alert
@@ -1244,11 +1245,12 @@ void drawForecast(const owm_daily_t *daily, tm timeInfo)
 
       display.drawInvertedBitmap(196 + X_MIN_OFFSET, (i * 32) + Y_MIN_OFFSET, getAlertBitmap32(cur_alert),
                                  32, 32, ACCENT_COLOR);
-      // must be called after getAlertBitmap
-      toTitleCase(cur_alert.event);
+      // Keep the English event name for icon selection, then localize the title.
+      String eventName = localizeAlertEvent(cur_alert.event);
+      if (eventName == cur_alert.event) toTitleCase(eventName);
 
       drawMultiLnString(196 + 32 + 3, 5 + 17 + (i * 32),
-                        cur_alert.event, LEFT, max_w, 1, 0);
+                        eventName, LEFT, max_w, 1, 0);
     } // end for-loop
   } // end 2 alerts
 
@@ -1748,6 +1750,8 @@ void drawStatusBar(const String &statusStr, const String &refreshTimeStr,
 void drawError(const uint8_t *bitmap_196x196,
                const String &errMsgLn1, const String &errMsgLn2)
 {
+  const int16_t visibleCenterX = X_MIN_OFFSET + DISP_WIDTH / 2;
+  const int16_t visibleCenterY = Y_MIN_OFFSET + DISP_HEIGHT / 2;
   display.setFont(&FONT_26pt8b);
   if (!errMsgLn2.isEmpty())
   {
@@ -1764,9 +1768,8 @@ void drawError(const uint8_t *bitmap_196x196,
                       DISP_HEIGHT / 2 + 196 / 2 + 21,
                       errMsgLn1, CENTER, DISP_WIDTH - 200, 2, 55);
   }
-  display.drawInvertedBitmap(DISP_WIDTH / 2 - 196 / 2 + X_MIN_OFFSET,
-                             DISP_HEIGHT / 2 - 196 / 2 - 21 + Y_MIN_OFFSET,
+  display.drawInvertedBitmap(visibleCenterX - 196 / 2,
+                             visibleCenterY - 196 / 2 - 21,
                              bitmap_196x196, 196, 196, ACCENT_COLOR);
   return;
 } // end drawError
-

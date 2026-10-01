@@ -22,3 +22,10 @@
 #define LOCALE_INC(code) X_LOCALE_INC(code)
 
 #include LOCALE_INC(LOCALE)
+
+#ifndef HAS_LOCALIZED_ALERT_EVENTS
+String localizeAlertEvent(const String &event)
+{
+  return event;
+}
+#endif
