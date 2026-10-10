@@ -130,6 +130,90 @@ void setup()
   unsigned long startTime = millis();
   Serial.begin(115200);
 
+#ifdef EPD_RST_PIN_PROBE
+  pinMode(PIN_EPD_PWR, OUTPUT);
+  digitalWrite(PIN_EPD_PWR, DISP_ON);
+  Serial.println("EPD RST probe: display supply on");
+  delay(2000);
+  pinMode(PIN_EPD_RST, OUTPUT);
+  digitalWrite(PIN_EPD_RST, LOW);
+  Serial.println("Measure RST to GND at display connector: LOW for 30 s (about 0 V)");
+  delay(30000);
+  digitalWrite(PIN_EPD_RST, HIGH);
+  Serial.println("Measure RST to GND at display connector: HIGH for 30 s (about 3.3 V)");
+  delay(30000);
+  digitalWrite(PIN_EPD_PWR, DISP_OFF);
+  Serial.println("EPD RST probe complete; press RESET to repeat.");
+  Serial.flush();
+  esp_deep_sleep_start();
+#endif
+
+#ifdef EPD_SPI_PIN_PROBE
+  const uint8_t spiProbePins[] = {PIN_EPD_CS, PIN_EPD_DC, PIN_EPD_SCK, PIN_EPD_MOSI};
+  const char *spiProbeNames[] = {"CS", "DC", "SCLK", "DIN"};
+  pinMode(PIN_EPD_PWR, OUTPUT);
+  digitalWrite(PIN_EPD_PWR, DISP_ON);
+  pinMode(PIN_EPD_RST, OUTPUT);
+  digitalWrite(PIN_EPD_RST, LOW); // keep the panel in reset while probing its input wires
+  for (uint8_t i = 0; i < 4; ++i)
+  {
+    pinMode(spiProbePins[i], OUTPUT);
+    digitalWrite(spiProbePins[i], LOW);
+  }
+  Serial.println("EPD signal probe: VCC on, RST low; measure each signal to GND at the display connector.");
+  for (uint8_t i = 0; i < 4; ++i)
+  {
+    digitalWrite(spiProbePins[i], HIGH);
+    Serial.print(spiProbeNames[i]);
+    Serial.println(" HIGH for 30 s (about 3.3 V); other signal pins LOW (about 0 V)");
+    delay(30000);
+    digitalWrite(spiProbePins[i], LOW);
+  }
+  digitalWrite(PIN_EPD_CS, HIGH);
+  digitalWrite(PIN_EPD_RST, HIGH);
+  digitalWrite(PIN_EPD_PWR, DISP_OFF);
+  Serial.println("EPD signal probe complete; press RESET to repeat.");
+  Serial.flush();
+  esp_deep_sleep_start();
+#endif
+
+#ifdef EPD_DIAGNOSTIC_PATTERN
+  Serial.println("EPD diagnostic: power hold, then black and red test pattern");
+  const bool testSucceeded = renderDisplayPages([] {
+    display.fillScreen(GxEPD_WHITE);
+    display.fillRect(60, 60, 240, 240, GxEPD_BLACK);
+    display.fillRect(500, 60, 240, 240, GxEPD_RED);
+  });
+  Serial.print("EPD BUSY after drawing: ");
+  Serial.println(digitalRead(PIN_EPD_BUSY));
+#if defined(EPD_VCC_MEASUREMENT_HOLD_MS) && EPD_VCC_MEASUREMENT_HOLD_MS > 0
+  if (testSucceeded)
+  {
+    Serial.print("Keeping display supply on for ");
+    Serial.print(EPD_VCC_MEASUREMENT_HOLD_MS / 1000UL);
+    Serial.println(" s after refresh command; watch for a delayed image.");
+    for (unsigned long elapsed = 0; elapsed < EPD_VCC_MEASUREMENT_HOLD_MS; elapsed += 5000UL)
+    {
+      delay(5000);
+      Serial.print("EPD BUSY after ");
+      Serial.print((elapsed + 5000UL) / 1000UL);
+      Serial.print(" s: ");
+      Serial.println(digitalRead(PIN_EPD_BUSY));
+    }
+  }
+#endif
+  powerOffDisplay();
+  if (!testSucceeded)
+  {
+    Serial.println("EPD diagnostic failed; sleeping until next scheduled test");
+    esp_sleep_enable_timer_wakeup(SLEEP_DURATION * 60ULL * 1000000ULL);
+    Serial.flush();
+    esp_deep_sleep_start();
+  }
+  Serial.println("EPD diagnostic complete; press RESET to repeat.");
+  while (true) delay(1000);
+#endif
+
 #if DEBUG_LEVEL >= 1
   printHeapUsage();
 #endif
@@ -155,14 +239,18 @@ void setup()
   {
     if (lowBat == false)
     { // battery is now low for the first time
-      prefs.putBool("lowBat", true);
       prefs.end();
-      initDisplay();
-      do
-      {
+      const bool batteryAlertShown = renderDisplayPages([] {
         drawError(battery_alert_0deg_196x196, TXT_LOW_BATTERY);
-      } while (display.nextPage());
+      });
       powerOffDisplay();
+      // A failed alert must be retried on the next low-battery wake as well.
+      if (batteryAlertShown)
+      {
+        prefs.begin(NVS_NAMESPACE, false);
+        prefs.putBool("lowBat", true);
+        prefs.end();
+      }
     }
 
     if (batteryVoltage <= CRIT_LOW_BATTERY_VOLTAGE)
@@ -212,22 +300,19 @@ void setup()
   if (wifiStatus != WL_CONNECTED)
   { // WiFi Connection Failed
     killWiFi();
-    initDisplay();
     if (wifiStatus == WL_NO_SSID_AVAIL)
     {
       Serial.println(TXT_NETWORK_NOT_AVAILABLE);
-      do
-      {
+      renderDisplayPages([] {
         drawError(wifi_x_196x196, TXT_NETWORK_NOT_AVAILABLE);
-      } while (display.nextPage());
+      });
     }
     else
     {
       Serial.println(TXT_WIFI_CONNECTION_FAILED);
-      do
-      {
+      renderDisplayPages([] {
         drawError(wifi_x_196x196, TXT_WIFI_CONNECTION_FAILED);
-      } while (display.nextPage());
+      });
     }
     powerOffDisplay();
     beginDeepSleep(startTime, &timeInfo);
@@ -240,11 +325,9 @@ void setup()
   {
     Serial.println(TXT_TIME_SYNCHRONIZATION_FAILED);
     killWiFi();
-    initDisplay();
-    do
-    {
+    renderDisplayPages([] {
       drawError(wi_time_4_196x196, TXT_TIME_SYNCHRONIZATION_FAILED);
-    } while (display.nextPage());
+    });
     powerOffDisplay();
     beginDeepSleep(startTime, &timeInfo);
   }
@@ -265,11 +348,9 @@ void setup()
     killWiFi();
     statusStr = "One Call " + OWM_ONECALL_VERSION + " API";
     tmpStr = String(rxStatus, DEC) + ": " + getHttpResponsePhrase(rxStatus);
-    initDisplay();
-    do
-    {
+    renderDisplayPages([&] {
       drawError(wi_cloud_down_196x196, statusStr, tmpStr);
-    } while (display.nextPage());
+    });
     powerOffDisplay();
     beginDeepSleep(startTime, &timeInfo);
   }
@@ -279,11 +360,9 @@ void setup()
     killWiFi();
     statusStr = "Air Pollution API";
     tmpStr = String(rxStatus, DEC) + ": " + getHttpResponsePhrase(rxStatus);
-    initDisplay();
-    do
-    {
+    renderDisplayPages([&] {
       drawError(wi_cloud_down_196x196, statusStr, tmpStr);
-    } while (display.nextPage());
+    });
     powerOffDisplay();
     beginDeepSleep(startTime, &timeInfo);
   }
@@ -343,9 +422,7 @@ void setup()
   getDateStr(dateStr, &timeInfo);
 
   // RENDER FULL REFRESH
-  initDisplay();
-  do
-  {
+  renderDisplayPages([&] {
     drawCurrentConditions(owm_onecall.current, owm_onecall.daily[0],
                           owm_air_pollution, inTemp, inHumidity);
     drawOutlookGraph(owm_onecall.hourly, owm_onecall.daily, timeInfo);
@@ -355,7 +432,7 @@ void setup()
     drawAlerts(owm_onecall.alerts, CITY_STRING, dateStr);
 #endif
     drawStatusBar(statusStr, refreshTimeStr, wifiRSSI, batteryVoltage);
-  } while (display.nextPage());
+  });
   powerOffDisplay();
 
   // DEEP SLEEP
@@ -367,4 +444,3 @@ void setup()
 void loop()
 {
 } // end loop
-

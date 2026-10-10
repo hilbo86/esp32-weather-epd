@@ -36,10 +36,28 @@ const uint8_t PIN_EPD_DC   = 22;
 const uint8_t PIN_EPD_SCK  = 18;
 const uint8_t PIN_EPD_MISO = 19; // 19 Master-In Slave-Out not used, as no data from display
 const uint8_t PIN_EPD_MOSI = 23;
-const uint8_t PIN_EPD_PWR  = 26; // Irrelevant if directly connected to 3.3V
+// D3/GPIO26 controls the external transistor switch for the display supply.
+// This wiring turns the display on with LOW and off with HIGH.
+const uint8_t PIN_EPD_PWR  = 26;
 const bool    DISP_ON      = LOW;
 const bool    DISP_OFF     = HIGH;
 const uint8_t DISP_ROTATION = 2;
+
+// GDEY073D46 BUSY guard. Every value below is in MICROSECONDS.
+// Window fields: {latest BUSY assertion, minimum BUSY duration, absolute phase deadline}.
+// Clock starts before RST release / command; short LOW/HIGH pulses never restart it.
+// Calibrated against successful runs: reset 16.187 ms (one early end),
+// PowerOn 172.140 ms, refresh 35.059 s, PowerOff 145.098 ms.
+// Reset elapsed time includes startup activity; keep its minimum BUSY duration
+// at 2 ms so a short early response cannot advance initialization.
+const EpdBusyConfig EPD_BUSY_CONFIG = {
+  100,                             // count/ignore pulses strictly shorter than this
+  {20000,     2000,    40000},     // _InitDisplay reset: ~16.2 ms total, including early response
+  {50000,   150000,   250000},     // _PowerOn: ~172 ms
+  {100000, 30000000, 45000000},    // _refresh: ~35.06 s
+  {50000,   120000,   250000},     // _PowerOff: ~145 ms
+  2                                // additional attempts: 2 means at most 3 in total
+};
 // I2C Pins used for BME280
 const uint8_t PIN_BME_SDA = 17;
 const uint8_t PIN_BME_SCL = 16;
@@ -160,4 +178,3 @@ const uint32_t MIN_BATTERY_VOLTAGE = 3000; // (millivolts)
 // FONTS
 // ALERTS
 // BATTERY MONITORING
-

@@ -42,8 +42,10 @@
   #define DISP_WIDTH  (800 - X_MIN_OFFSET - X_MAX_OFFSET)
   #define DISP_HEIGHT (480 - Y_MIN_OFFSET - Y_MAX_OFFSET)
   #include <GxEPD2_7C.h>
-  extern GxEPD2_7C<GxEPD2_730c_GDEY073D46, 
-                   GxEPD2_730c_GDEY073D46::HEIGHT / 4> display;
+  #include "epd/RobustGxEPD2_730c.h"
+  #include "epd/DisplayUpdate.h"
+  extern GxEPD2_7C<RobustGxEPD2_730c,
+                   RobustGxEPD2_730c::HEIGHT / 4> display;
 #endif
 #ifdef DISP_BW_V1
   #define DISP_WIDTH  (640 - X_MIN_OFFSET - X_MAX_OFFSET)
@@ -70,6 +72,23 @@ void drawMultiLnString(int16_t x, int16_t y, const String &text,
                        uint16_t color=GxEPD_BLACK);
 void initDisplay();
 void powerOffDisplay();
+
+// A hardware reset loses controller RAM. Replay ALL pages on every retry,
+// including weather/error/diagnostic screens, using the same already loaded data.
+template<typename DrawPage>
+bool renderDisplayPages(const DrawPage& drawPage)
+{
+  initDisplay();
+#ifdef DISP_7C_F
+  const bool success = epd::renderPagesWithRecovery(display, drawPage);
+  if (success)
+    Serial.printf("EPD update successful after %u attempt(s)\n", display.epd2.attempts());
+  return success;
+#else
+  do { drawPage(); } while (display.nextPage());
+  return true;
+#endif
+}
 void drawCurrentConditions(const owm_current_t &current,
                            const owm_daily_t &today,
                            const owm_resp_air_pollution_t &owm_air_pollution,

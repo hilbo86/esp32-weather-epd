@@ -20,6 +20,10 @@
 
 #include <cstdint>
 #include <Arduino.h>
+#include "epd/BusyConfig.h"
+
+// BUSY windows and retry limit for the local GDEY073D46 driver (config.cpp).
+extern const EpdBusyConfig EPD_BUSY_CONFIG;
 
 // E-PAPER PANEL
 // This project supports the following E-Paper panels:

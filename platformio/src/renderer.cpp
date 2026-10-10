@@ -54,9 +54,9 @@
                            PIN_EPD_BUSY));
 #endif
 #ifdef DISP_7C_F
-  GxEPD2_7C<GxEPD2_730c_GDEY073D46,
-            GxEPD2_730c_GDEY073D46::HEIGHT / 4> display(
-    GxEPD2_730c_GDEY073D46(PIN_EPD_CS,
+  GxEPD2_7C<RobustGxEPD2_730c,
+            RobustGxEPD2_730c::HEIGHT / 4> display(
+    RobustGxEPD2_730c(PIN_EPD_CS,
                            PIN_EPD_DC,
                            PIN_EPD_RST,
                            PIN_EPD_BUSY));
@@ -226,6 +226,22 @@ void initDisplay()
 {
   pinMode(PIN_EPD_PWR, OUTPUT);
   digitalWrite(PIN_EPD_PWR, DISP_ON);
+#if defined(EPD_VCC_MEASUREMENT_HOLD_MS) && EPD_VCC_MEASUREMENT_HOLD_MS > 0
+  Serial.print("EPD supply control GPIO ");
+  Serial.print(PIN_EPD_PWR);
+  Serial.print(" set to ");
+  Serial.println(DISP_ON == HIGH ? "HIGH" : "LOW");
+  Serial.print("Measure voltage at display VCC/GND now; holding power for ");
+  Serial.print(EPD_VCC_MEASUREMENT_HOLD_MS / 1000UL);
+  Serial.println(" s before initialization.");
+  delay(EPD_VCC_MEASUREMENT_HOLD_MS);
+#endif
+#ifdef EPD_DIAGNOSTIC_SPI_HZ
+  display.epd2.selectSPI(SPI, SPISettings(EPD_DIAGNOSTIC_SPI_HZ, MSBFIRST, SPI_MODE0));
+  Serial.print("EPD diagnostic SPI clock: ");
+  Serial.print(EPD_DIAGNOSTIC_SPI_HZ);
+  Serial.println(" Hz");
+#endif
 #ifdef DRIVER_WAVESHARE
   display.init(115200, true, 2, false);
 #endif
@@ -246,6 +262,9 @@ void initDisplay()
   // display.fillScreen(GxEPD_WHITE);
   display.setFullWindow();
   display.firstPage(); // use paged drawing mode, sets fillScreen(GxEPD_WHITE)
+#ifdef DISP_7C_F
+  display.epd2.beginUpdate(EPD_BUSY_CONFIG);
+#endif
   return;
 } // end initDisplay
 
