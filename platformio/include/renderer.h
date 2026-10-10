@@ -23,6 +23,7 @@
 #include <time.h>
 #include "api_response.h"
 #include "config.h"
+#include "update_failure_log.h"
 
 #ifdef DISP_BW_V2
   #define DISP_WIDTH  (800 - X_MIN_OFFSET - X_MAX_OFFSET)
@@ -83,6 +84,8 @@ bool renderDisplayPages(const DrawPage& drawPage)
   const bool success = epd::renderPagesWithRecovery(display, drawPage);
   if (success)
     Serial.printf("EPD update successful after %u attempt(s)\n", display.epd2.attempts());
+  else
+    recordUpdateFailure(update_failure::ErrorCode::DisplayUpdate);
   return success;
 #else
   do { drawPage(); } while (display.nextPage());

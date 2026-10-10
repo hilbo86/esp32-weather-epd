@@ -30,6 +30,7 @@
 #include "display_utils.h"
 #include "icons/icons_196x196.h"
 #include "renderer.h"
+#include "update_failure_log.h"
 
 #if defined(SENSOR_BME280)
   #include <Adafruit_BME280.h>
@@ -50,11 +51,35 @@ static owm_resp_air_pollution_t owm_air_pollution;
 
 Preferences prefs;
 
+// Common finalization for scheduled sleep and the unaligned Wi-Fi retry.
+void sleepForSeconds(unsigned long startTime, uint64_t sleepDuration)
+{
+  finishUpdateAttempt();
+#if DEBUG_LEVEL >= 1
+  printHeapUsage();
+#endif
+  esp_sleep_enable_timer_wakeup(sleepDuration * 1000000ULL);
+  Serial.print(TXT_AWAKE_FOR);
+  Serial.println(" " + String((millis() - startTime) / 1000.0, 3) + "s");
+  Serial.print(TXT_ENTERING_DEEP_SLEEP_FOR);
+  Serial.println(" " + String(sleepDuration) + "s");
+  Serial.flush();
+  esp_deep_sleep_start();
+}
+
 /* Put esp32 into ultra low-power deep sleep (<11μA).
  * Aligns wake time to the minute. Sleep times defined in config.cpp.
  */
-void beginDeepSleep(unsigned long startTime, tm *timeInfo)
+void beginDeepSleep(unsigned long startTime, tm *timeInfo,
+                    uint64_t retryAfterSeconds = 0)
 {
+  if (retryAfterSeconds)
+  {
+    // A Wi-Fi failure always retries in five minutes, even before the first
+    // time sync or during bedtime. Do not align or compensate this interval.
+    sleepForSeconds(startTime, retryAfterSeconds);
+    return;
+  }
   if (!getLocalTime(timeInfo))
   {
     Serial.println(TXT_REFERENCING_OLDER_TIME_NOTICE);
@@ -111,16 +136,7 @@ void beginDeepSleep(unsigned long startTime, tm *timeInfo)
   sleepDuration += 3ULL;
   sleepDuration *= 1.0015f;
 
-#if DEBUG_LEVEL >= 1
-  printHeapUsage();
-#endif
-
-  esp_sleep_enable_timer_wakeup(sleepDuration * 1000000ULL);
-  Serial.print(TXT_AWAKE_FOR);
-  Serial.println(" "  + String((millis() - startTime) / 1000.0, 3) + "s");
-  Serial.print(TXT_ENTERING_DEEP_SLEEP_FOR);
-  Serial.println(" " + String(sleepDuration) + "s");
-  esp_deep_sleep_start();
+  sleepForSeconds(startTime, sleepDuration);
 } // end beginDeepSleep
 
 /* Program entry point.
@@ -129,6 +145,7 @@ void setup()
 {
   unsigned long startTime = millis();
   Serial.begin(115200);
+  initializeUpdateFailureLog();
 
 #ifdef EPD_RST_PIN_PROBE
   pinMode(PIN_EPD_PWR, OUTPUT);
@@ -206,9 +223,7 @@ void setup()
   if (!testSucceeded)
   {
     Serial.println("EPD diagnostic failed; sleeping until next scheduled test");
-    esp_sleep_enable_timer_wakeup(SLEEP_DURATION * 60ULL * 1000000ULL);
-    Serial.flush();
-    esp_deep_sleep_start();
+    sleepForSeconds(startTime, SLEEP_DURATION * 60ULL);
   }
   Serial.println("EPD diagnostic complete; press RESET to repeat.");
   while (true) delay(1000);
@@ -237,6 +252,12 @@ void setup()
   // low battery, deep sleep now
   if (batteryVoltage <= LOW_BATTERY_VOLTAGE)
   {
+    const auto batteryError = batteryVoltage <= CRIT_LOW_BATTERY_VOLTAGE
+      ? update_failure::ErrorCode::BatteryCritical
+      : batteryVoltage <= VERY_LOW_BATTERY_VOLTAGE
+        ? update_failure::ErrorCode::BatteryVeryLow
+        : update_failure::ErrorCode::BatteryLow;
+    recordBatteryFailure(batteryError);
     if (lowBat == false)
     { // battery is now low for the first time
       prefs.end();
@@ -276,8 +297,12 @@ void setup()
       Serial.print(TXT_ENTERING_DEEP_SLEEP_FOR);
       Serial.println(" " + String(LOW_BATTERY_SLEEP_INTERVAL) + "min");
     }
+    prefs.end();
+    finishUpdateAttempt();
+    Serial.flush();
     esp_deep_sleep_start();
   }
+  clearBatteryFailureState();
   // battery is no longer low, reset variable in non-volatile storage
   if (lowBat == true)
   {
@@ -315,7 +340,7 @@ void setup()
       });
     }
     powerOffDisplay();
-    beginDeepSleep(startTime, &timeInfo);
+    beginDeepSleep(startTime, &timeInfo, update_failure::wifiRetrySeconds);
   }
 
   // TIME SYNCHRONIZATION
@@ -324,12 +349,16 @@ void setup()
   if (!timeConfigured)
   {
     Serial.println(TXT_TIME_SYNCHRONIZATION_FAILED);
+    const bool wifiFailed = WiFi.status() != WL_CONNECTED;
+    if (!wifiFailed)
+      recordUpdateFailure(update_failure::ErrorCode::TimeSync);
     killWiFi();
     renderDisplayPages([] {
       drawError(wi_time_4_196x196, TXT_TIME_SYNCHRONIZATION_FAILED);
     });
     powerOffDisplay();
-    beginDeepSleep(startTime, &timeInfo);
+    beginDeepSleep(startTime, &timeInfo,
+                   wifiFailed ? update_failure::wifiRetrySeconds : 0);
   }
 
   // MAKE API REQUESTS
@@ -345,6 +374,10 @@ void setup()
   int rxStatus = getOWMonecall(client, owm_onecall);
   if (rxStatus != HTTP_CODE_OK)
   {
+    const bool wifiFailed = update_failure::isWiFiApiStatus(rxStatus)
+                            || WiFi.status() != WL_CONNECTED;
+    if (!wifiFailed)
+      recordUpdateFailure(update_failure::ErrorCode::OneCallApi, rxStatus);
     killWiFi();
     statusStr = "One Call " + OWM_ONECALL_VERSION + " API";
     tmpStr = String(rxStatus, DEC) + ": " + getHttpResponsePhrase(rxStatus);
@@ -352,11 +385,16 @@ void setup()
       drawError(wi_cloud_down_196x196, statusStr, tmpStr);
     });
     powerOffDisplay();
-    beginDeepSleep(startTime, &timeInfo);
+    beginDeepSleep(startTime, &timeInfo,
+                   wifiFailed ? update_failure::wifiRetrySeconds : 0);
   }
   rxStatus = getOWMairpollution(client, owm_air_pollution);
   if (rxStatus != HTTP_CODE_OK)
   {
+    const bool wifiFailed = update_failure::isWiFiApiStatus(rxStatus)
+                            || WiFi.status() != WL_CONNECTED;
+    if (!wifiFailed)
+      recordUpdateFailure(update_failure::ErrorCode::AirPollutionApi, rxStatus);
     killWiFi();
     statusStr = "Air Pollution API";
     tmpStr = String(rxStatus, DEC) + ": " + getHttpResponsePhrase(rxStatus);
@@ -364,7 +402,8 @@ void setup()
       drawError(wi_cloud_down_196x196, statusStr, tmpStr);
     });
     powerOffDisplay();
-    beginDeepSleep(startTime, &timeInfo);
+    beginDeepSleep(startTime, &timeInfo,
+                   wifiFailed ? update_failure::wifiRetrySeconds : 0);
   }
   killWiFi(); // WiFi no longer needed
 
@@ -401,6 +440,7 @@ void setup()
     //       displayed.
     if (std::isnan(inTemp) || std::isnan(inHumidity))
     {
+      recordUpdateFailure(update_failure::ErrorCode::SensorRead);
       statusStr = "BME " + String(TXT_READ_FAILED);
       Serial.println(statusStr);
     }
@@ -411,6 +451,7 @@ void setup()
   }
   else
   {
+    recordUpdateFailure(update_failure::ErrorCode::SensorInit);
     statusStr = "BME " + String(TXT_NOT_FOUND); // check wiring
     Serial.println(statusStr);
   }

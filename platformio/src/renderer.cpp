@@ -274,6 +274,10 @@ void powerOffDisplay()
 {
   display.hibernate(); // turns powerOff() and sets controller to deep sleep for
                        // minimum power use
+#ifdef DISP_7C_F
+  if (!display.epd2.healthy())
+    recordUpdateFailure(update_failure::ErrorCode::DisplayUpdate);
+#endif
   digitalWrite(PIN_EPD_PWR, DISP_OFF);
   return;
 } // end initDisplay
@@ -1184,6 +1188,7 @@ void drawForecast(const owm_daily_t *daily, tm timeInfo)
   if (!ignore_list || !alert_indices)
   {
     Serial.println("Error: Failed to allocate memory while handling alerts.");
+    recordUpdateFailure(update_failure::ErrorCode::AlertAllocation);
     free(ignore_list);
     free(alert_indices);
     return;
