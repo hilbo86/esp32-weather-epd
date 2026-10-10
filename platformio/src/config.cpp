@@ -98,7 +98,7 @@ const char *HOUR_FORMAT = "%H";      // 24-hour ex: 01   23
 // Date format used when displaying date in top-right corner.
 // For more information about formatting see
 // https://man7.org/linux/man-pages/man3/strftime.3.html
-const char *DATE_FORMAT = "%a, %B %e"; // ex: Sat, January 1
+const char *DATE_FORMAT = "%a, %e. %B"; // ex: Sa, 10. Oktober
 // Date/Time format used when displaying the last refresh time along the bottom
 // of the screen.
 // For more information about formatting see

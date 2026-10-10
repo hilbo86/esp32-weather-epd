@@ -272,7 +272,7 @@ void drawCurrentSunrise(const owm_current_t &current)
   int PosX = POS_SUNRISE % 2;
   int PosY = static_cast<int>(POS_SUNRISE / 2);
     // icons
-  display.drawInvertedBitmap(162 * PosX + X_MIN_OFFSET, 204 + (48 + 8) * PosY + X_MIN_OFFSET,
+  display.drawInvertedBitmap(162 * PosX + X_MIN_OFFSET, 204 + (48 + 8) * PosY + Y_MIN_OFFSET,
                              wi_sunrise_48x48, 48, 48, GxEPD_BLACK);
 
   // labels
